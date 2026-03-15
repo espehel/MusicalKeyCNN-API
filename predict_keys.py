@@ -1,7 +1,6 @@
 import argparse
 from pathlib import Path
 import torch
-import torchaudio
 import librosa
 import numpy as np
 
@@ -24,27 +23,18 @@ def parse_args():
                         help="Device to use: 'cpu' or 'cuda'. If not given, uses CUDA if available.")
     return parser.parse_args()
 
-def get_mp3_list(path):
-    """
-    Returns a list of mp3 files from a folder or a single file.
-    Args:
-        path (str or Path): Path to .mp3 file or directory.
+SUPPORTED_EXTENSIONS = {".mp3", ".wav", ".flac", ".ogg"}
 
-    Returns:
-        List[Path]: List of mp3 file Paths.
-
-    Raises:
-        ValueError: If file is not .mp3 or folder contains none.
-    """
+def get_audio_files(path):
     path = Path(path)
     if path.is_file():
-        if path.suffix.lower() != ".mp3":
-            raise ValueError(f"File {path} is not a .mp3 file.")
+        if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
+            raise ValueError(f"Unsupported file type '{path.suffix}'. Supported: {SUPPORTED_EXTENSIONS}")
         return [path]
     elif path.is_dir():
-        files = list(path.glob("*.mp3"))
+        files = [f for f in path.iterdir() if f.suffix.lower() in SUPPORTED_EXTENSIONS]
         if not files:
-            raise ValueError(f"No .mp3 files found in {path}")
+            raise ValueError(f"No audio files found in {path}")
         return files
     else:
         raise FileNotFoundError(f"{path} is not a valid file or folder.")
@@ -63,13 +53,7 @@ def preprocess_mp3(mp3_path, sample_rate=44100, n_bins=105, hop_length=8820):
     Returns:
         torch.Tensor: Shape (1, freq_bins, time_frames), ready for model input.
     """
-    waveform, sr = torchaudio.load(mp3_path)
-    if waveform.shape[0] > 1:
-        waveform = waveform.mean(dim=0, keepdim=True)
-    if sr != sample_rate:
-        resampler = torchaudio.transforms.Resample(orig_freq=sr, new_freq=sample_rate)
-        waveform = resampler(waveform)
-    waveform = waveform.squeeze(0).numpy().astype(np.float32)
+    waveform, sr = librosa.load(mp3_path, sr=sample_rate, mono=True)
 
     cqt = librosa.cqt(waveform, sr=sample_rate, hop_length=hop_length, n_bins=n_bins, bins_per_octave=24, fmin=65)
     spec = np.abs(cqt)
@@ -110,7 +94,7 @@ def main():
     device = torch.device(args.device) if args.device else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = load_model(args.model_path, device)
 
-    mp3_files = get_mp3_list(args.path)
+    mp3_files = get_audio_files(args.path)
 
     print("="*70)
     print("{:^70}".format("Key Prediction Results"))
@@ -134,7 +118,7 @@ def main():
             print(f"{mp3_path.name:<28} | {pred:^5} | {camelot_str:^8} | {key_text:^20}")
         except Exception as e:
             print(f"Error processing {mp3_path.name}: {e}")
-    
+
     print("="*70)
     print(f"Total files processed: {len(mp3_files)}")
     print("="*70)
