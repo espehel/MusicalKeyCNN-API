@@ -8,7 +8,7 @@ class BasicConv2d(nn.Module):
     Each block consists of a 2D convolution, followed by batch normalization and ELU activation.
     This design allows for stable and efficient learning on log-magnitude log-frequency audio spectrograms,
     preserving spectro-temporal information relevant for musical key detection.
-    
+
     Args:
         in_channels (int): Number of input channels (e.g., 1 for single-channel spectrograms).
         out_channels (int): Number of output feature maps (controls model capacity).
@@ -30,7 +30,7 @@ class BasicConv2d(nn.Module):
     def forward(self, x):
         """
         Forward pass through the convolutional block.
-        
+
         Args:
             x (torch.Tensor): Input spectrogram (B, C, F, T)
 
@@ -127,12 +127,3 @@ class KeyNet(nn.Module):
         x = self.global_avgpool(x)
         x = torch.flatten(x, 1)
         return x
-
-if __name__ == "__main__":
-    # Example usage: dummy input for the key classification
-    model = KeyNet(num_classes=24, in_channels=1)
-    dummy_input = torch.randn(2, 1, 105, 100)  # (Batch, Channel, Frequency, Time)
-    out = model(dummy_input)
-    print("Shape:", out.shape)  # Expected: [2, 24]
-    # Print number of trainable parameters for reproducibility/comparison
-    print(sum(p.numel() for p in model.parameters() if p.requires_grad))

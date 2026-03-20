@@ -122,7 +122,7 @@ class KeyDataset(Dataset):
                 camelot_idx = (camelot_idx + camelot_steps) % 12
             else:  # major key
                 camelot_idx = (camelot_idx - 12 + camelot_steps) % 12 + 12
-        
+
         # Load pitch-shifted spectrogram from preprocessed data
         with open(self.preprocessed_dir / f'{filename}_{n_steps}.pkl', 'rb') as f:
             full_spec = pickle.load(f)
@@ -139,22 +139,3 @@ class KeyDataset(Dataset):
             spec = spec.unsqueeze(0)   # (1, freq, time)
 
         return {'spec': spec, 'gt_id': camelot_idx}
-
-if __name__ == '__main__':
-    # Example usage: Load data and print sample shape
-    from torch.utils.data import DataLoader
-    from tqdm import tqdm
-
-    dataset_dir = Path('Dataset') / 'giantsteps-mtg-key-dataset'
-    preprocessed_dir = Path('Dataset') / 'mtg-preprocessed-audio'
-
-    dataset = KeyDataset(dataset_dir, preprocessed_dir)
-    train_loader = DataLoader(dataset, batch_size=1, shuffle=False)
-
-    print(f'Dataset size: {len(dataset)}')
-
-    for sample in tqdm(train_loader):
-        spec = sample['spec']
-        gt_id = sample['gt_id']
-        print('Spec shape:', spec.shape)
-        break

@@ -1,9 +1,11 @@
 from pathlib import Path
 from tqdm import tqdm
 import torch
-from dataset import KeyDataset
 from torch.utils.data import DataLoader
-from model import KeyNet
+
+from .dataset import KeyDataset
+from .model import KeyNet
+
 
 def load_model(model_path, device, num_classes=24, in_channels=1, Nf=20):
     """
@@ -23,6 +25,7 @@ def load_model(model_path, device, num_classes=24, in_channels=1, Nf=20):
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
     return model
+
 
 def mirex_category(pred_idx, gt_idx):
     """
@@ -57,6 +60,7 @@ def mirex_category(pred_idx, gt_idx):
     if diff == -15:
         return "parallel"
     return "rest"
+
 
 def evaluate_mirex(model, dataloader, device):
     """
@@ -97,6 +101,7 @@ def evaluate_mirex(model, dataloader, device):
     scores["total"] = total
     return scores
 
+
 def print_mirex_report(scores):
     """
     Neatly prints the percentage ratios and the weighted Mirex score.
@@ -118,20 +123,3 @@ def print_mirex_report(scores):
     print("="*40)
     print(f"Samples evaluated: {scores['total']}")
     print("="*40)
-
-def main():
-    root_dir = Path('Dataset/giantsteps-key-dataset')
-    preprocessed_dir = Path('Dataset/giantsteps-preprocessed-audio')
-    model_file_path = Path('checkpoints') / 'keynet.pt'  # Change as needed
-
-    dataset = KeyDataset(root_dir, preprocessed_dir, chunk_samples=float('inf'), pitch_range=(0,0))
-    val_loader = DataLoader(dataset, batch_size=1, shuffle=False)
-    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    model = load_model(model_file_path, DEVICE)
-
-    scores = evaluate_mirex(model, val_loader, DEVICE)
-    print_mirex_report(scores)
-
-if __name__ == "__main__":
-    main()

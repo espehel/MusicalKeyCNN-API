@@ -4,8 +4,8 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 from pathlib import Path
 
-from model import KeyNet
-from dataset import KeyDataset
+from key_prediction.model import KeyNet
+from key_prediction.dataset import KeyDataset
 
 # File where the best model weights will be stored
 model_file_path = Path('checkpoints') / 'keynet.pt'
@@ -53,7 +53,7 @@ for epoch in range(NUM_EPOCHS):
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
-        
+
         running_loss += loss.item() * inputs.size(0)
         _, preds = outputs.max(1)
         correct += (preds == labels).sum().item()

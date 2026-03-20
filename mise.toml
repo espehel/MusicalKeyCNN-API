@@ -1,0 +1,30 @@
+[tools]
+python = "3.11"
+node = "22"
+uv = "latest"
+
+[env]
+MODEL_PATH = "{{config_root}}/packages/key-prediction/checkpoints/keynet.pt"
+DEVICE = "cpu"
+
+[tasks.api]
+description = "Run API dev server"
+run = "uv run uvicorn api.main:app --reload --port 8000"
+dir = "apps/api/src"
+
+[tasks.web]
+description = "Run React dev server"
+run = "npm run dev"
+dir = "apps/web"
+
+[tasks.install]
+description = "Install all dependencies"
+run = ["uv sync", "npm install --prefix apps/web"]
+
+[tasks."docker:build"]
+description = "Build API docker image from repo root"
+run = "docker build -f apps/api/Dockerfile -t musicalkey-api ."
+
+[tasks."docker:run"]
+description = "Run API container"
+run = "docker run --rm -p 8000:8000 musicalkey-api"

@@ -1,8 +1,0 @@
-librosa
-numpy
-tqdm
-soundfile
-fastapi
-uvicorn[standard]
-python-multipart
-#torch >= 2.0  # installed separately to allow CPU/CUDA selection

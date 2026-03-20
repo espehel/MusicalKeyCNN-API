@@ -4,14 +4,25 @@ from pathlib import Path
 
 import torch
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from eval import load_model
-from predict_keys import SUPPORTED_EXTENSIONS, camelot_output, preprocess_mp3
+from key_prediction import load_model, preprocess_mp3, camelot_output, SUPPORTED_EXTENSIONS
+from bpm_analysis import analyze_bpm
+
 MODEL_PATH = Path(os.getenv("MODEL_PATH", "checkpoints/keynet.pt"))
 DEVICE = torch.device(os.getenv("DEVICE", "cuda" if torch.cuda.is_available() else "cpu"))
 
-app = FastAPI(title="MusicalKeyCNN", description="Predict the musical key of an audio file.")
+app = FastAPI(title="MusicalKeyCNN", description="Predict the musical key and BPM of an audio file.")
+
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
 
 model = None
 
@@ -29,8 +40,8 @@ def health():
     return {"status": "ok", "device": str(DEVICE), "model": str(MODEL_PATH)}
 
 
-@app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+@app.post("/key")
+async def key(file: UploadFile = File(...)):
     suffix = Path(file.filename).suffix.lower()
     if suffix not in SUPPORTED_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"Unsupported file type '{suffix}'. Use: {SUPPORTED_EXTENSIONS}")
@@ -47,6 +58,25 @@ async def predict(file: UploadFile = File(...)):
 
         camelot_str, key_text = camelot_output(pred)
         return JSONResponse({"file": file.filename, "camelot": camelot_str, "key": key_text, "id": pred})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+
+@app.post("/bpm")
+async def bpm(file: UploadFile = File(...)):
+    suffix = Path(file.filename).suffix.lower()
+    if suffix not in SUPPORTED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type '{suffix}'. Use: {SUPPORTED_EXTENSIONS}")
+
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(await file.read())
+        tmp_path = Path(tmp.name)
+
+    try:
+        result = analyze_bpm(tmp_path)
+        return JSONResponse({"file": file.filename, **result})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:

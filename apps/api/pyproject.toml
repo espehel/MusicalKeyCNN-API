@@ -1,0 +1,22 @@
+[project]
+name = "api"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "key-prediction",
+    "bpm-analysis",
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
+]
+
+[tool.uv.sources]
+key-prediction = { workspace = true }
+bpm-analysis = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/api"]

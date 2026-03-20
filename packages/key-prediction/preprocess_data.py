@@ -1,12 +1,13 @@
 from pathlib import Path
-from dataset import CAMELOT_MAPPING
+from key_prediction.dataset import CAMELOT_MAPPING
 from tqdm import tqdm
 import torchaudio
 import librosa
 import numpy as np
 import pickle
 
-def preprocess_data(dataset_dir, output_dir, pitch_range = (-4, 7)):
+
+def preprocess_data(dataset_dir, output_dir, pitch_range=(-4, 7)):
     """
     Preprocesses the MTG/GiantSteps Key Dataset for key classification, as in
     Korzeniowski & Widmer (2018).
@@ -86,10 +87,11 @@ def preprocess_data(dataset_dir, output_dir, pitch_range = (-4, 7)):
             with open(out_file, 'wb') as f:
                 pickle.dump(spec, f)
 
+
 def create_annotations_txt(dataset_dir):
     """
     Creates an 'annotations.txt' file for the GiantSteps dataset in the same
-    format as the MTG (GiantSteps-MTG) dataset, enabling unified preprocessing 
+    format as the MTG (GiantSteps-MTG) dataset, enabling unified preprocessing
     and data loading.
 
     For GiantSteps, original labels are in individual .key files (per track).
@@ -134,6 +136,7 @@ def create_annotations_txt(dataset_dir):
             # Each line: file_num, key_str, confidence=2 ('high')
             writer.writelines([f'{d[0]}\t{d[1]}\t2\n'])
 
+
 if __name__ == '__main__':
     # --- This part is needed for training ---
     # Set input/output folders
@@ -145,4 +148,4 @@ if __name__ == '__main__':
     dataset_dir = Path('Dataset') / 'giantsteps-key-dataset'
     output_dir = Path('Dataset') / 'giantsteps-preprocessed-audio'
     create_annotations_txt(dataset_dir)
-    preprocess_data(dataset_dir, output_dir, pitch_range=(0,0))
+    preprocess_data(dataset_dir, output_dir, pitch_range=(0, 0))
